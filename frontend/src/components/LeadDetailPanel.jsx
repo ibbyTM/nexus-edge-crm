@@ -1,6 +1,102 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 
+// ── Script Starter ──────────────────────────────────────────────
+const SCRIPT_STYLES = [
+  { value: 'pain',      label: 'Pain-First' },
+  { value: 'curiosity', label: 'Curiosity Hook' },
+  { value: 'roi',       label: 'Direct ROI' },
+];
+
+function generateScript(lead, style) {
+  const name    = lead.company_name || 'there';
+  const city    = lead.city || 'your area';
+  const rating  = lead.rating ? `${lead.rating} stars` : null;
+  const reviews = lead.review_count ? `${lead.review_count}+ reviews` : null;
+  const industry = lead.industry && lead.industry !== 'Unknown' ? lead.industry.toLowerCase() : 'trade';
+
+  const reputation = rating && reviews
+    ? `you've got ${rating} and ${reviews} on Google`
+    : rating
+    ? `you've got ${rating} on Google`
+    : reviews
+    ? `you've got ${reviews} on Google`
+    : `you're well established in ${city}`;
+
+  if (style === 'pain') {
+    return `"Hey, is this ${name}? Quick one — I work with ${industry} businesses in ${city} who are struggling to keep their schedule full during slow months. Does that sound familiar at all?\n\n[pause]\n\nWe've built a system that books 5–15 qualified jobs per week on autopilot — handles all the lead gen and appointment setting so you just show up. Worth a 15-minute call to see if it makes sense for you?"`;
+  }
+
+  if (style === 'curiosity') {
+    return `"Hey, is this ${name}? I noticed ${reputation} — clearly one of the top ${industry} outfits in ${city}. Quick question — if I could show you how your competitors are booking 20+ jobs a month without doing any cold calling themselves, would that be worth 15 minutes?\n\n[pause]\n\nWe handle the whole thing — targeting, outreach, qualification. You just take the calls that are already warm."`;
+  }
+
+  if (style === 'roi') {
+    return `"Hi, is that ${name}? I'll be straight with you — we help ${industry} businesses in ${city} add £15k–£30k in revenue per month by booking more qualified jobs. ${rating ? `With ${rating} you've clearly got the quality side sorted` : `You've clearly got a solid operation`} — the question is just whether the pipeline is where you want it.\n\n[pause]\n\nAre you looking to grow right now, or are you pretty much at capacity?"`;
+  }
+}
+
+function ScriptStarter({ lead }) {
+  const [style, setStyle]   = useState('pain');
+  const [copied, setCopied] = useState(false);
+  const script = generateScript(lead, style);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(script).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div className="panel-section-label" style={{ margin: 0 }}>Script Starter</div>
+        <select
+          className="input"
+          style={{ width: 'auto', fontSize: '11px', padding: '3px 28px 3px 8px' }}
+          value={style}
+          onChange={(e) => setStyle(e.target.value)}
+        >
+          {SCRIPT_STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+      </div>
+
+      <div style={{
+        background: 'var(--bg)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: '12px 14px',
+        fontSize: '13px',
+        lineHeight: '1.7',
+        color: 'var(--text-2)',
+        whiteSpace: 'pre-wrap',
+        fontStyle: 'italic',
+        position: 'relative',
+      }}>
+        {script}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+        <button className="btn btn-secondary btn-sm" onClick={handleCopy}>
+          {copied ? (
+            <>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--green)" strokeWidth="2"><path d="M2 8l4 4 8-8"/></svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="4" y="4" width="9" height="11" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
+              Copy Script
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+// ────────────────────────────────────────────────────────────────
+
 const STATUS_OPTIONS = [
   { value: 'new',         label: 'New' },
   { value: 'called',      label: 'Called' },
@@ -184,6 +280,11 @@ export default function LeadDetailPanel({ lead, onClose, onUpdate }) {
                 {saving ? 'Saving…' : 'Save Notes'}
               </button>
             </div>
+          </div>
+
+          {/* Script Starter */}
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+            <ScriptStarter lead={lead} />
           </div>
 
           {/* Log Call */}

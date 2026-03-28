@@ -38,7 +38,7 @@ router.post('/import', (req, res) => {
   let imported = 0;
   let skipped = 0;
 
-  const checkDupe = db.prepare('SELECT id FROM leads WHERE phone = ? AND phone IS NOT NULL AND phone != ""');
+  const checkDupe = db.prepare("SELECT id FROM leads WHERE phone = ? AND phone IS NOT NULL AND phone != ''");
   const stmt = db.prepare(`
     INSERT INTO leads (company_name, phone, website, city, industry, rating, review_count, source)
     VALUES (?, ?, ?, ?, ?, ?, ?, 'apify')

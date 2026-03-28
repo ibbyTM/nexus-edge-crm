@@ -12,9 +12,16 @@ function relTime(str) {
   return new Date(str).toLocaleDateString();
 }
 
+const GOOGLE_MAPS_ID = 'compass/crawler-google-places';
+
 function ActorCard({ actor, onRun, onImport, importing }) {
   const isRunning = actor.stats?.lastRunStatus === 'RUNNING' ||
     (actor.lastRun && actor.lastRun.status === 'RUNNING');
+  const isGoogleMaps = actor.id === GOOGLE_MAPS_ID;
+  const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [location, setLocation] = useState('United Kingdom');
+  const [maxResults, setMaxResults] = useState(50);
 
   return (
     <div className={`actor-card ${isRunning ? 'actor-card-running' : ''}`}>
@@ -47,12 +54,62 @@ function ActorCard({ actor, onRun, onImport, importing }) {
         <span>Builds: <strong style={{ color: 'var(--text-2)' }}>{actor.stats?.totalBuilds ?? '—'}</strong></span>
       </div>
 
+      {/* Search form for Google Maps Scraper */}
+      {isGoogleMaps && showForm && (
+        <div style={{ marginBottom: '12px', padding: '12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Search Term</label>
+            <input
+              className="input"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="e.g. HVAC companies in London"
+              autoFocus
+            />
+          </div>
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Location / Country</label>
+            <input
+              className="input"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="United Kingdom"
+            />
+          </div>
+          <div style={{ marginBottom: '10px' }}>
+            <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Max Results</label>
+            <input
+              className="input"
+              type="number"
+              value={maxResults}
+              onChange={(e) => setMaxResults(Number(e.target.value))}
+              min={1} max={500}
+              style={{ width: '100px' }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={!searchTerm.trim()}
+              onClick={() => {
+                const fullSearch = location.trim() ? `${searchTerm.trim()}, ${location.trim()}` : searchTerm.trim();
+                onRun(actor.id, { searchStringsArray: [fullSearch], maxCrawledPlacesPerSearch: maxResults });
+                setShowForm(false);
+              }}
+            >
+              ▶ Start Run
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowForm(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
       <div className="actor-actions">
         <button
           className="btn btn-secondary btn-sm"
-          onClick={() => onRun(actor.id)}
+          onClick={() => isGoogleMaps ? setShowForm(f => !f) : onRun(actor.id, {})}
           disabled={isRunning}
-          title="Trigger a new run with default input"
+          title={isGoogleMaps ? 'Configure search and run' : 'Trigger a new run with default input'}
         >
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
             <polygon points="4,2 14,8 4,14"/>
@@ -105,10 +162,10 @@ export default function Import() {
 
   useEffect(() => { if (token) loadActors(); else setLoading(false); }, [token]);
 
-  const handleRun = async (actorId) => {
+  const handleRun = async (actorId, input = {}) => {
     setRunMsg(null);
     try {
-      const run = await api.apify.run(actorId, {});
+      const run = await api.apify.run(actorId, input);
       setRunMsg({ type: 'success', text: `Run started (ID: ${run.id}). Status: ${run.status}` });
       setTimeout(loadActors, 3000);
     } catch (e) {
